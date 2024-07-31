@@ -1291,6 +1291,41 @@ static void propagate_overflow_to_viewport(Element& root_element, Layout::Viewpo
     overflow_origin_computed_values.set_overflow_y(CSS::Overflow::Visible);
 }
 
+inline ByteString get_filename() {
+  static int i = 0;
+  return ByteString::formatted("{}.trace", i++);
+}
+
+inline void serialize_paintable_as_json(const Painting::Paintable& paintable, JsonObjectSerializer<StringBuilder>& object) {
+  MUST(object.add("type"sv, paintable.class_name()));
+  MUST(object.add("debug"sv, paintable.layout_node().debug_description()));
+  if (paintable.layout_node().is_box()) {
+    auto const& paintable_box = static_cast<Painting::PaintableBox const&>(paintable);
+    auto rect = paintable_box.absolute_border_box_rect();
+    MUST(object.add("x"sv, static_cast<int>(rect.x())));
+    MUST(object.add("y"sv, static_cast<int>(rect.y())));
+    MUST(object.add("width"sv, static_cast<int>(rect.width())));
+    MUST(object.add("height"sv, static_cast<int>(rect.height())));
+
+    /*
+    if (paintable_box.has_scrollable_overflow()) {
+      builder.appendff(" overflow: {}", paintable_box.scrollable_overflow_rect());
+    }
+
+    if (!paintable_box.scroll_offset().is_zero()) {
+      builder.appendff(" scroll-offset: {}", paintable_box.scroll_offset());
+    }*/
+
+    auto children = MUST(object.add_array("children"sv));
+    for (auto const* child = paintable.first_child(); child; child = child->next_sibling()) {
+      auto child_object = MUST(children.add_object());
+      serialize_paintable_as_json(*child, child_object);
+      MUST(child_object.finish());
+    }
+    MUST(children.finish());
+  }
+}
+
 void Document::update_layout(UpdateLayoutReason reason)
 {
     auto navigable = this->navigable();
@@ -1317,6 +1352,10 @@ void Document::update_layout(UpdateLayoutReason reason)
 
     invalidate_display_list();
 
+    if (f == nullptr) {
+      f = fopen(get_filename().characters(), "w");
+    }
+    
     auto* document_element = this->document_element();
     auto viewport_rect = navigable->viewport_rect();
 
@@ -1426,6 +1465,31 @@ void Document::update_layout(UpdateLayoutReason reason)
 
     if constexpr (UPDATE_LAYOUT_DEBUG) {
         dbgln("LAYOUT {} {} µs", to_string(reason), timer.elapsed_time().to_microseconds());
+    }
+    {
+      StringBuilder builder;
+      auto json = MUST(JsonObjectSerializer<>::try_create(builder));
+      MUST(json.add("type"sv, "out"));
+      MUST(json.add("url"sv, MUST(url().to_string())));
+      auto dom_tree = MUST(json.add_object("dom_tree"sv));
+      serialize_tree_as_json(dom_tree);
+      MUST(dom_tree.finish());
+      auto layout_tree = MUST(json.add_object("layout_tree"sv));
+      serialize_paintable_as_json(*paintable(), layout_tree);
+      MUST(layout_tree.finish());
+      {
+         time_t rawtime;
+         struct tm * timeinfo;
+         char buffer[80];
+
+         time (&rawtime);
+         timeinfo = localtime(&rawtime);
+
+         strftime(buffer,sizeof(buffer),"%S-%M-%H-%d-%m-%Y", timeinfo);
+         MUST(json.add("time"sv, StringView(buffer, strlen(buffer))));
+      }
+      MUST(json.finish());
+      out(f, "{}\n", MUST(builder.to_string()));
     }
 }
 

@@ -1016,6 +1016,7 @@ String Node::debug_description() const
     builder.append(class_name());
     if (dom_node()) {
         builder.appendff("<{}>", dom_node()->node_name());
+        builder.appendff("<{}>", dom_node()->unique_id());
         if (dom_node()->is_element()) {
             auto& element = static_cast<DOM::Element const&>(*dom_node());
             if (element.id().has_value())
