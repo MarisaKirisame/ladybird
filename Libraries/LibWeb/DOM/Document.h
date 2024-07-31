@@ -180,6 +180,7 @@ class WEB_API Document
     GC_DECLARE_ALLOCATOR(Document);
 
 public:
+  FILE* f = nullptr;
     enum class Type {
         XML,
         HTML

@@ -45,6 +45,7 @@
 #include <LibWeb/HTML/HTMLImageElement.h>
 #include <LibWeb/HTML/HTMLInputElement.h>
 #include <LibWeb/HTML/HTMLLegendElement.h>
+#include <LibWeb/HTML/HTMLImageElement.h>
 #include <LibWeb/HTML/HTMLSelectElement.h>
 #include <LibWeb/HTML/HTMLSlotElement.h>
 #include <LibWeb/HTML/HTMLStyleElement.h>
@@ -1940,16 +1941,31 @@ void Node::serialize_tree_as_json(JsonObjectSerializer<StringBuilder>& object) c
         MUST(object.add("type"sv, "element"));
 
         auto const* element = static_cast<DOM::Element const*>(this);
-        if (element->namespace_uri().has_value())
+
+	if (element->namespace_uri().has_value())
             MUST(object.add("namespace"sv, element->namespace_uri().value()));
 
-        if (element->has_attributes()) {
-            auto attributes = MUST(object.add_object("attributes"sv));
+        auto attributes = MUST(object.add_object("attributes"sv));
+	if (element->has_attributes()) {
             element->for_each_attribute([&attributes](auto& name, auto& value) {
                 MUST(attributes.add(name, value));
             });
-            MUST(attributes.finish());
         }
+	if (is<HTML::HTMLImageElement>(*this)) {
+	  auto const& image = static_cast<HTML::HTMLImageElement const&>(*this);
+	  MUST(attributes.add("image_width"sv, image.natural_width()));
+	  MUST(attributes.add("image_height"sv, image.natural_height()));
+	}
+	MUST(attributes.finish());
+
+	auto properties = MUST(object.add_object("properties"sv));
+	//auto css = element->resolved_css_values();
+	//if (css) {
+	//  css->for_each_property([&](auto property_id, auto& value) {
+	//    MUST(properties.add(CSS::string_from_property_id(property_id), value.to_string()));
+	//  });
+	//}
+	MUST(properties.finish());
 
         if (element->is_navigable_container()) {
             auto const* container = static_cast<HTML::NavigableContainer const*>(element);
@@ -2448,6 +2464,7 @@ String Node::debug_description() const
 {
     StringBuilder builder;
     builder.append(node_name().to_ascii_lowercase());
+    builder.append(unique_id().value());
     if (is_element()) {
         auto const& element = static_cast<DOM::Element const&>(*this);
         if (element.id().has_value())
