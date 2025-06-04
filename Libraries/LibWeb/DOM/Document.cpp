@@ -1470,7 +1470,7 @@ void Document::update_layout(UpdateLayoutReason reason)
       StringBuilder builder;
       auto json = MUST(JsonObjectSerializer<>::try_create(builder));
       MUST(json.add("type"sv, "out"));
-      MUST(json.add("url"sv, MUST(url().to_string())));
+      MUST(json.add("url"sv, url().to_string()));
       auto dom_tree = MUST(json.add_object("dom_tree"sv));
       serialize_tree_as_json(dom_tree);
       MUST(dom_tree.finish());

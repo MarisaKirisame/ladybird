@@ -1905,12 +1905,12 @@ void Node::serialize_tree_as_json(JsonObjectSerializer<StringBuilder>& object) c
 	MUST(attributes.finish());
 
 	auto properties = MUST(object.add_object("properties"sv));
-	auto css = element->computed_css_values();
-	if (css.has_value()) {
-	  css.value().for_each_property([&](auto property_id, auto& value) {
-	    MUST(properties.add(CSS::string_from_property_id(property_id), value.to_string()));
-	  });
-	}
+	//auto css = element->resolved_css_values();
+	//if (css) {
+	//  css->for_each_property([&](auto property_id, auto& value) {
+	//    MUST(properties.add(CSS::string_from_property_id(property_id), value.to_string()));
+	//  });
+	//}
 	MUST(properties.finish());
 
         if (element->is_navigable_container()) {
