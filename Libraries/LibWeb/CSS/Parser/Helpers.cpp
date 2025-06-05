@@ -15,6 +15,8 @@
 #include <LibWeb/CSS/CSSStyleSheet.h>
 #include <LibWeb/CSS/Parser/Parser.h>
 #include <LibWeb/HTML/Window.h>
+#include <LibCore/File.h>
+#include <LibCore/DateTime.h>
 
 namespace Web {
 
@@ -42,8 +44,64 @@ GC::Ref<JS::Realm> internal_css_realm()
     return *realm;
 }
 
+static String sanitize_filename(StringView url_string)
+{
+    // Replace characters that can't be used in filenames
+    StringBuilder sanitized;
+    for (auto ch : url_string) {
+        if (ch == '/' || ch == '\\' || ch == ':' || ch == '*' || ch == '?' || ch == '"' || ch == '<' || ch == '>' || ch == '|') {
+            sanitized.append('_');
+        } else {
+            sanitized.append(ch);
+        }
+    }
+    return MUST(sanitized.to_string());
+}
+
+static void write_css_to_file(StringView css, StringView source_description, Optional<::URL::URL> const& location)
+{
+    String filename;
+    if (location.has_value()) {
+        auto url_string = location->to_string();
+        auto sanitized_url = sanitize_filename(url_string);
+        filename = MUST(String::formatted("{}.csslog", sanitized_url));
+    } else {
+        filename = "inline.csslog"_string;
+    }
+    
+    // Append to file (so we don't overwrite multiple CSS from same source)
+    auto file_result = Core::File::open(filename, Core::File::OpenMode::Write | Core::File::OpenMode::Append);
+    if (!file_result.is_error()) {
+        auto file = file_result.release_value();
+        
+        // Write header
+        auto header = MUST(String::formatted("/* CSS from: {} */\n/* ==================== */\n\n", source_description));
+        (void)file->write_until_depleted(header.bytes());
+        
+        // Write CSS content
+        (void)file->write_until_depleted(css.bytes());
+        
+        // Write separator
+        (void)file->write_until_depleted("\n\n"sv.bytes());
+        
+        dbgln("CSS logged to file: {} (source: {})", filename, source_description);
+    }
+}
+
 GC::Ref<CSS::CSSStyleSheet> parse_css_stylesheet(CSS::Parser::ParsingParams const& context, StringView css, Optional<::URL::URL> location, Vector<NonnullRefPtr<CSS::MediaQuery>> media_query_list)
 {
+    // Log CSS content to file with source information
+    if (!css.is_empty()) {
+        String source_description;
+        if (location.has_value()) {
+            source_description = MUST(String::formatted("External stylesheet: {}", location->to_string()));
+        } else {
+            source_description = "Inline CSS or style tag"_string;
+        }
+        
+        write_css_to_file(css, source_description, location);
+    }
+    
     if (css.is_empty()) {
         auto rule_list = CSS::CSSRuleList::create(*context.realm);
         auto media_list = CSS::MediaList::create(*context.realm, {});
