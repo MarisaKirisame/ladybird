@@ -1958,6 +1958,8 @@ void Node::serialize_tree_as_json(JsonObjectSerializer<StringBuilder>& object, c
 	}
 	bool is_focus_root = (d != nullptr) && this == d->focused_area();
 	MUST(attributes.add("is_focus_root"sv, is_focus_root));
+	bool is_hovered_root = (d != nullptr) && this == d->hovered_node();
+	MUST(attributes.add("is_hovered_root"sv, is_hovered_root));
 	MUST(attributes.finish());
 
 	auto properties = MUST(object.add_object("properties"sv));
