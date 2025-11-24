@@ -1520,7 +1520,7 @@ void Document::update_layout(UpdateLayoutReason reason)
       MUST(json.add("type"sv, "out"));
       MUST(json.add("url"sv, url().to_string()));
       auto dom_tree = MUST(json.add_object("dom_tree"sv));
-      serialize_tree_as_json(dom_tree);
+      serialize_tree_as_json(dom_tree, this);
       MUST(dom_tree.finish());
       auto layout_tree = MUST(json.add_object("layout_tree"sv));
       serialize_paintable_as_json(*paintable(), layout_tree);
@@ -3312,7 +3312,7 @@ String Document::dump_dom_tree_as_json() const
 {
     StringBuilder builder;
     auto json = MUST(JsonObjectSerializer<>::try_create(builder));
-    serialize_tree_as_json(json);
+    serialize_tree_as_json(json, this);
 
     MUST(json.finish());
     return MUST(builder.to_string());

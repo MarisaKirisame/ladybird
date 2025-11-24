@@ -707,7 +707,7 @@ void PageClient::page_did_mutate_dom(FlyString const& type, Web::DOM::Node const
 
     StringBuilder builder;
     auto serializer = MUST(JsonObjectSerializer<>::try_create(builder));
-    target.serialize_tree_as_json(serializer);
+    target.serialize_tree_as_json(serializer, nullptr);
     MUST(serializer.finish());
     auto serialized_target = MUST(builder.to_string());
 
