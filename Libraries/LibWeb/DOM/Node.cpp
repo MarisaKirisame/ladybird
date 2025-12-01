@@ -1921,17 +1921,17 @@ bool Node::is_uninteresting_whitespace_node() const
     return false;
 }
 
-IterationDecision Node::serialize_child_as_json(JsonArraySerializer<StringBuilder>& children_array, Node const& child, const Document *d) const
+IterationDecision Node::serialize_child_as_json(JsonArraySerializer<StringBuilder>& children_array, Node const& child) const
 {
     if (child.is_uninteresting_whitespace_node())
         return IterationDecision::Continue;
     JsonObjectSerializer<StringBuilder> child_object = MUST(children_array.add_object());
-    child.serialize_tree_as_json(child_object, d);
+    child.serialize_tree_as_json(child_object);
     MUST(child_object.finish());
     return IterationDecision::Continue;
 }
 
-void Node::serialize_tree_as_json(JsonObjectSerializer<StringBuilder>& object, const Document* d) const
+void Node::serialize_tree_as_json(JsonObjectSerializer<StringBuilder>& object) const
 {
     MUST(object.add("name"sv, node_name()));
     MUST(object.add("id"sv, unique_id().value()));
@@ -1956,10 +1956,10 @@ void Node::serialize_tree_as_json(JsonObjectSerializer<StringBuilder>& object, c
 	  MUST(attributes.add("image_width"sv, image.natural_width()));
 	  MUST(attributes.add("image_height"sv, image.natural_height()));
 	}
-	bool is_focus_root = (d != nullptr) && this == d->focused_area();
+	bool is_focus_root = this == document().focused_area();
 	MUST(attributes.add("is_focus_root"sv, is_focus_root));
-	bool is_hovered_root = (d != nullptr) && this == d->hovered_node();
-	MUST(attributes.add("is_hovered_root"sv, is_hovered_root));
+	bool is_hovered_root = this == document().hovered_node();
+	MUST(attributes.add("is_hover_root"sv, is_hovered_root));
 	MUST(attributes.finish());
 
 	auto properties = MUST(object.add_object("properties"sv));
@@ -1976,7 +1976,7 @@ void Node::serialize_tree_as_json(JsonObjectSerializer<StringBuilder>& object, c
             if (auto const* content_document = container->content_document()) {
                 auto children = MUST(object.add_array("children"sv));
                 JsonObjectSerializer<StringBuilder> content_document_object = MUST(children.add_object());
-                content_document->serialize_tree_as_json(content_document_object, d);
+                content_document->serialize_tree_as_json(content_document_object);
                 MUST(content_document_object.finish());
                 MUST(children.finish());
             }
@@ -2009,11 +2009,11 @@ void Node::serialize_tree_as_json(JsonObjectSerializer<StringBuilder>& object, c
     MUST((object.add("visible"sv, !!layout_node())));
 
     if (auto const* element = as_if<Element>(this)) {
-      element->serialize_children_as_json(object, d);
+      element->serialize_children_as_json(object);
     } else if (has_child_nodes()) {
         auto children = MUST(object.add_array("children"sv));
-        auto add_child = [this, &children, d](Node const& child) {
-	  return serialize_child_as_json(children, child, d);
+        auto add_child = [this, &children](Node const& child) {
+	  return serialize_child_as_json(children, child);
         };
 
         for_each_child(add_child);

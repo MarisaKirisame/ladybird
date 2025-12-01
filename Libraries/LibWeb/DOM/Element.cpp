@@ -1668,7 +1668,7 @@ void Element::clear_pseudo_element_nodes(Badge<Layout::TreeBuilder>)
     }
 }
 
-void Element::serialize_children_as_json(JsonObjectSerializer<StringBuilder>& element_object, const Document* d) const
+void Element::serialize_children_as_json(JsonObjectSerializer<StringBuilder>& element_object) const
 {
     bool has_pseudo_elements = this->has_pseudo_elements();
     if (!is_shadow_host() && !has_child_nodes() && !has_pseudo_elements)
@@ -1701,10 +1701,10 @@ void Element::serialize_children_as_json(JsonObjectSerializer<StringBuilder>& el
     }
 
     if (is_shadow_host())
-      serialize_child_as_json(children, *shadow_root(), d);
+      serialize_child_as_json(children, *shadow_root());
 
-    auto add_child = [this, &children, d](Node const& child) {
-      return serialize_child_as_json(children, child, d);
+    auto add_child = [this, &children](Node const& child) {
+      return serialize_child_as_json(children, child);
     };
     for_each_child(add_child);
 

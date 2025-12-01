@@ -312,7 +312,7 @@ public:
     bool has_pseudo_elements() const;
     void clear_pseudo_element_nodes(Badge<Layout::TreeBuilder>);
 
-    void serialize_children_as_json(JsonObjectSerializer<StringBuilder>&, const Document* d) const;
+    void serialize_children_as_json(JsonObjectSerializer<StringBuilder>&) const;
 
     i32 tab_index() const;
     void set_tab_index(i32 tab_index);

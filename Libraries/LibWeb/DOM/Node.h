@@ -392,8 +392,8 @@ public:
     bool is_scripting_disabled() const;
 
     // Used for dumping the DOM Tree
-    void serialize_tree_as_json(JsonObjectSerializer<StringBuilder>&, const Document* d) const;
-    IterationDecision serialize_child_as_json(JsonArraySerializer<StringBuilder>& children_array, Node const& child, const Document *d) const;
+    void serialize_tree_as_json(JsonObjectSerializer<StringBuilder>&) const;
+    IterationDecision serialize_child_as_json(JsonArraySerializer<StringBuilder>& children_array, Node const& child) const;
 
     bool is_shadow_including_descendant_of(Node const&) const;
     bool is_shadow_including_inclusive_descendant_of(Node const&) const;
